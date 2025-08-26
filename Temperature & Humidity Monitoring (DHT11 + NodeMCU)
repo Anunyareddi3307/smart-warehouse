@@ -1,0 +1,41 @@
+#include <ESP8266WiFi.h>
+#include <ESP8266HTTPClient.h>
+#include <DHT.h>
+
+#define DHTPIN D5
+#define DHTTYPE DHT11
+
+DHT dht(DHTPIN, DHTTYPE);
+
+const char* WIFI_SSID = "YourWiFi";
+const char* WIFI_PASS = "YourPassword";
+const char* SERVER_URL = "http://yourserver.com/updateEnv.php";
+
+WiFiClient client;
+HTTPClient http;
+
+void setup() {
+  Serial.begin(9600);
+  dht.begin();
+
+  WiFi.begin(WIFI_SSID, WIFI_PASS);
+  while (WiFi.status() != WL_CONNECTED) {
+    delay(500);
+    Serial.print(".");
+  }
+  Serial.println("WiFi Connected");
+}
+
+void loop() {
+  float t = dht.readTemperature();
+  float h = dht.readHumidity();
+
+  if (!isnan(t) && !isnan(h)) {
+    Serial.println("Temp: " + String(t) + " Hum: " + String(h));
+    http.begin(client, SERVER_URL + String("?temp=") + t + "&hum=" + h);
+    http.GET();
+    http.end();
+  }
+
+  delay(5000);
+}
